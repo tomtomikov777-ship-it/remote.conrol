@@ -20,17 +20,16 @@ jobs:
     - name: Install Capacitor CLI
       run: npm install -g @capacitor/cli @capacitor/android
 
-    - name: Create Capacitor project
+    - name: Create Capacitor project and add Android
       run: |
         mkdir capacitor-app
         cd capacitor-app
         npm init -y
         npm install @capacitor/core @capacitor/cli @capacitor/android
         npx cap init "RODA Remote" "io.ionic.roda" --web-dir=www
-        # Копируем наш HTML в папку www
+        npx cap add android   # теперь папка www будет создана
+        # Копируем наш HTML из папки app в www
         cp -r ../app/* www/
-        # Добавляем Android платформу
-        npx cap add android
 
     - name: Replace Android sources with our IR-enabled version
       run: |
@@ -41,7 +40,6 @@ jobs:
         # Копируем наши файлы из папки android (в корне репозитория)
         cp -r ../android/app/src/main/java/io/ionic/roda/MainActivity.java android/app/src/main/java/io/ionic/roda/
         cp ../android/app/src/main/AndroidManifest.xml android/app/src/main/
-        # Дополнительно копируем другие нужные файлы (если есть)
 
     - name: Build APK
       run: |
