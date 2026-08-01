@@ -2,7 +2,7 @@ name: Build APK from HTML
 
 on:
   push:
-    branches: [ "main" ]   # если ваша основная ветка называется master, замените main на master
+    branches: [ "main" ]   # Если ваша ветка называется master, замените main на master
 
 jobs:
   build:
@@ -11,19 +11,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Build APK from HTML
+      uses: darkshredder/web-to-app-action@main
       with:
-        node-version: '16'
+        build-folder-path: "."          # папка, где лежит index.html (корень)
+        app-name: "RODA Remote"         # название приложения
+        output-folder-path: "my-apks"   # папка для готового APK
 
-    - name: Install web-to-apk tool
-      run: npm install -g @yaireo/web-to-apk
-
-    - name: Convert HTML to APK
-      run: web-to-apk -i index.html -n "RODA Remote" -o app.apk
-
-    - name: Upload APK as artifact
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: RODA-Remote-APK
-        path: app.apk
+        path: my-apks/*.apk             # загружаем все APK из этой папки
