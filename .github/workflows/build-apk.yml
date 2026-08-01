@@ -1,4 +1,4 @@
-name: Build APK from HTML
+name: Build APK with Capacitor
 
 on:
   push:
@@ -7,19 +7,43 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build APK from HTML
-      uses: darkshredder/web-to-app-action@main
+    - name: Setup Node.js 22
+      uses: actions/setup-node@v4
       with:
-        build-folder-path: "app"        # теперь указываем папку app
-        app-name: "RODA Remote"
-        output-folder-path: "my-apks"
+        node-version: '22'
+
+    - name: Install Capacitor and Ionic CLI
+      run: |
+        npm install -g @ionic/cli @capacitor/cli @capacitor/android
+
+    - name: Create Capacitor project
+      run: |
+        mkdir capacitor-app
+        cd capacitor-app
+        npm init -y
+        npm install @capacitor/core @capacitor/cli @capacitor/android
+        npx cap init "RODA Remote" "io.ionic.roda" --web-dir=www
+        # Копируем наш HTML в папку www
+        cp -r ../app/* www/
+        # Добавляем Android платформу
+        npx cap add android
+
+    - name: Sync and build Android
+      run: |
+        cd capacitor-app
+        npx cap sync android
+        # Собираем APK
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: RODA-Remote-APK
-        path: my-apks/*.apk
+        path: capacitor-app/android/app/build/outputs/apk/debug/app-debug.apk
