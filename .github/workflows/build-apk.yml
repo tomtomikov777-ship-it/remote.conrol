@@ -2,7 +2,7 @@ name: Build APK from HTML
 
 on:
   push:
-    branches: [ "main" ]   # Если ваша ветка называется master, замените main на master
+    branches: [ "main" ]   # или "master"
 
 jobs:
   build:
@@ -14,12 +14,12 @@ jobs:
     - name: Build APK from HTML
       uses: darkshredder/web-to-app-action@main
       with:
-        build-folder-path: "."          # папка, где лежит index.html (корень)
-        app-name: "RODA Remote"         # название приложения
-        output-folder-path: "my-apks"   # папка для готового APK
+        build-folder-path: "app"        # теперь указываем папку app
+        app-name: "RODA Remote"
+        output-folder-path: "my-apks"
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: RODA-Remote-APK
-        path: my-apks/*.apk             # загружаем все APK из этой папки
+        path: my-apks/*.apk
