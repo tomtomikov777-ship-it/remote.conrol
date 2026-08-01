@@ -1,4 +1,4 @@
-name: Build APK with Capacitor
+name: Build APK with IR Support
 
 on:
   push:
@@ -17,9 +17,8 @@ jobs:
       with:
         node-version: '22'
 
-    - name: Install Capacitor and Ionic CLI
-      run: |
-        npm install -g @ionic/cli @capacitor/cli @capacitor/android
+    - name: Install Capacitor CLI
+      run: npm install -g @capacitor/cli @capacitor/android
 
     - name: Create Capacitor project
       run: |
@@ -33,17 +32,25 @@ jobs:
         # Добавляем Android платформу
         npx cap add android
 
-    - name: Sync and build Android
+    - name: Replace Android sources with our IR-enabled version
       run: |
         cd capacitor-app
-        npx cap sync android
-        # Собираем APK
-        cd android
+        # Удаляем стандартные исходники Android
+        rm -rf android/app/src/main/java/io/ionic/roda/MainActivity.java
+        rm -rf android/app/src/main/AndroidManifest.xml
+        # Копируем наши файлы из папки android (в корне репозитория)
+        cp -r ../android/app/src/main/java/io/ionic/roda/MainActivity.java android/app/src/main/java/io/ionic/roda/
+        cp ../android/app/src/main/AndroidManifest.xml android/app/src/main/
+        # Дополнительно копируем другие нужные файлы (если есть)
+
+    - name: Build APK
+      run: |
+        cd capacitor-app/android
         chmod +x gradlew
         ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: RODA-Remote-APK
+        name: RODA-Remote-IR-APK
         path: capacitor-app/android/app/build/outputs/apk/debug/app-debug.apk
