@@ -18,7 +18,6 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         try {
-            // Проверяем ИК-порт
             irManager = (ConsumerIrManager) getSystemService(Context.CONSUMER_IR_SERVICE);
             if (irManager == null || !irManager.hasIrEmitter()) {
                 Toast.makeText(this, "ИК-порт не найден", Toast.LENGTH_LONG).show();
@@ -32,9 +31,8 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        // Добавляем мост после того, как WebView полностью создан
+    public void onStart() {
+        super.onStart(); // обязательно вызываем родительский метод
         try {
             WebView webView = getBridge().getWebView();
             if (webView != null) {
