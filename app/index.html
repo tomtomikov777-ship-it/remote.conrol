@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Пульт RODA RS‑S12A</title>
   <style>
-    /* ... ваш стиль, который был ранее ... */
     * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
     body {
       display: flex;
@@ -70,8 +69,6 @@
       gap: 2px 6px;
     }
     .display-extra span { white-space: nowrap; }
-    .indicator-on { color: #ffcc00; font-weight: bold; }
-    .indicator-off { color: #558855; }
     .btn-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -111,12 +108,14 @@
     .btn-teal { background: #8ad4c8; box-shadow: 0 3px 0 #4a8a7a; }
     .btn-pink { background: #f0b0b0; box-shadow: 0 3px 0 #a07070; }
     .btn-wide { grid-column: span 2; }
-    .btn:disabled {
-      opacity: 0.5;
-      transform: translateY(3px);
-      box-shadow: 0 0px 0 #b0b0b0;
-      pointer-events: none;
+    .brand {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 10px;
+      color: #888;
+      letter-spacing: 1px;
     }
+    /* Индикатор блокировки */
     .lock-active .btn:not(.btn-lock) {
       opacity: 0.4;
       pointer-events: none;
@@ -124,13 +123,6 @@
     .lock-active .btn-lock {
       background: #ff8888;
       box-shadow: 0 3px 0 #aa5555;
-    }
-    .brand {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 10px;
-      color: #888;
-      letter-spacing: 1px;
     }
   </style>
 </head>
@@ -159,326 +151,299 @@
 
   <!-- Кнопки -->
   <div class="btn-grid" id="btnGrid">
-    <!-- Строка 1 -->
-    <button class="btn btn-red" onclick="sendPower()"><span class="icon">🔴</span>Вкл/Выкл</button>
-    <button class="btn btn-blue" onclick="sendMode()"><span class="icon">🔄</span>Режим</button>
-    <button class="btn btn-orange" onclick="sendFan()"><span class="icon">💨</span>Вент.</button>
-    <button class="btn" onclick="sendSwing()"><span class="icon">↕</span>Свинг</button>
+    <button class="btn btn-red" onclick="handlePower()"><span class="icon">🔴</span>Вкл/Выкл</button>
+    <button class="btn btn-blue" onclick="handleMode()"><span class="icon">🔄</span>Режим</button>
+    <button class="btn btn-orange" onclick="handleFan()"><span class="icon">💨</span>Вент.</button>
+    <button class="btn" onclick="handleSwing()"><span class="icon">↕</span>Свинг</button>
 
-    <!-- Строка 2 -->
-    <button class="btn btn-lg" onclick="sendTempUp()">+</button>
-    <button class="btn btn-lg" onclick="sendTempDown()">−</button>
-    <button class="btn" onclick="sendTurbo()"><span class="icon">⚡</span>Турбо</button>
-    <button class="btn" onclick="sendSleep()"><span class="icon">🌙</span>Сон</button>
+    <button class="btn btn-lg" onclick="handleTempUp()">+</button>
+    <button class="btn btn-lg" onclick="handleTempDown()">−</button>
+    <button class="btn" onclick="handleTurbo()"><span class="icon">⚡</span>Турбо</button>
+    <button class="btn" onclick="handleSleep()"><span class="icon">🌙</span>Сон</button>
 
-    <!-- Строка 3 -->
-    <button class="btn btn-purple" onclick="sendIFeel()"><span class="icon">👤</span>iFeel</button>
-    <button class="btn btn-teal" onclick="sendDisplay()"><span class="icon">💡</span>Дисплей</button>
-    <button class="btn btn-pink" onclick="sendLock()"><span class="icon">🔒</span>Блок</button>
-    <button class="btn" onclick="sendHealth()"><span class="icon">❤️</span>Здоровье</button>
+    <button class="btn btn-purple" onclick="handleIFeel()"><span class="icon">👤</span>iFeel</button>
+    <button class="btn btn-teal" onclick="handleDisplay()"><span class="icon">💡</span>Дисплей</button>
+    <button class="btn btn-pink" onclick="handleLock()"><span class="icon">🔒</span>Блок</button>
+    <button class="btn" onclick="handleHealth()"><span class="icon">❤️</span>Здоровье</button>
 
-    <!-- Строка 4 -->
-    <button class="btn" onclick="sendClean()"><span class="icon">🧹</span>Очистка</button>
-    <button class="btn" onclick="sendQuiet()"><span class="icon">🔇</span>Тихий</button>
-    <button class="btn btn-green btn-wide" onclick="sendTimer()"><span class="icon">⏲</span>Таймер</button>
-    <button class="btn btn-orange btn-wide" onclick="sendReset()"><span class="icon">↺</span>Сброс</button>
+    <button class="btn" onclick="handleClean()"><span class="icon">🧹</span>Очистка</button>
+    <button class="btn" onclick="handleQuiet()"><span class="icon">🔇</span>Тихий</button>
+    <button class="btn btn-green btn-wide" onclick="handleTimer()"><span class="icon">⏲</span>Таймер</button>
+    <button class="btn btn-orange btn-wide" onclick="handleReset()"><span class="icon">↺</span>Сброс</button>
   </div>
   <div class="brand">RODA RS‑S12A</div>
 </div>
 
 <script>
-  // Обёртка для отлова ошибок
-  (function() {
-    try {
-      // ====================
-      // 1. ИК-мост (для работы в Android WebView)
-      // ====================
-      function sendIRCode(frequency, pattern) {
-        if (window.irBridge) {
-          window.irBridge.sendIR(frequency, pattern);
-          console.log("📡 ИК-сигнал отправлен (частота " + frequency + " Гц)");
-        } else {
-          console.log("⚠️ ИК-мост не найден. В браузере код не будет работать.");
-        }
-      }
+  // ============================================================
+  //  ИНИЦИАЛИЗАЦИЯ СОСТОЯНИЯ
+  // ============================================================
+  let power = true;
+  let temperature = 24;
+  let modeIndex = 0;              // 0-охлаждение,1-обогрев,2-вентиляция,3-осушение,4-авто
+  const modes = ['❄️ Охлаждение', '☀️ Обогрев', '💨 Вентиляция', '💧 Осушение', '🔄 Авто'];
+  let fanIndex = 0;              // 0-Авто,1-Низк,2-Сред,3-Выс
+  const fanNames = ['Авто','Низк','Сред','Выс'];
+  let swing = true;
+  let turbo = false;
+  let sleep = false;
+  let timerMinutes = 0;
+  let timerInterval = null;
+  let iFeel = false;
+  let displayLight = true;
+  let locked = false;
+  let health = false;
+  let clean = false;
+  let quiet = false;
 
-      // ====================
-      // 2. Состояние интерфейса
-      // ====================
-      let power = true;
-      let temperature = 24;
-      let modeIndex = 0;
-      const modes = ['❄️ Охлаждение', '☀️ Обогрев', '💨 Вентиляция', '💧 Осушение', '🔄 Авто'];
-      let fanIndex = 0;
-      const fanNames = ['Авто','Низк','Сред','Выс'];
-      let swing = true;
-      let turbo = false;
-      let sleep = false;
-      let timerMinutes = 0;
-      let timerInterval = null;
-      let iFeel = false;
-      let displayLight = true;
-      let locked = false;
-      let health = false;
-      let clean = false;
-      let quiet = false;
+  // ============================================================
+  //  ЭЛЕМЕНТЫ DOM
+  // ============================================================
+  const tempDisplay = document.getElementById('tempDisplay');
+  const modeDisplay = document.getElementById('modeDisplay');
+  const fanSpeed = document.getElementById('fanSpeed');
+  const powerStatus = document.getElementById('powerStatus');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const swingStatus = document.getElementById('swingStatus');
+  const indicatorIFeel = document.getElementById('indicatorIFeel');
+  const indicatorLock = document.getElementById('indicatorLock');
+  const indicatorHealth = document.getElementById('indicatorHealth');
+  const indicatorClean = document.getElementById('indicatorClean');
+  const indicatorQuiet = document.getElementById('indicatorQuiet');
+  const indicatorTurbo = document.getElementById('indicatorTurbo');
+  const indicatorSleep = document.getElementById('indicatorSleep');
+  const btnGrid = document.getElementById('btnGrid');
 
-      // DOM-элементы
-      const tempDisplay = document.getElementById('tempDisplay');
-      const modeDisplay = document.getElementById('modeDisplay');
-      const fanSpeed = document.getElementById('fanSpeed');
-      const powerStatus = document.getElementById('powerStatus');
-      const timerDisplay = document.getElementById('timerDisplay');
-      const swingStatus = document.getElementById('swingStatus');
-      const indicatorIFeel = document.getElementById('indicatorIFeel');
-      const indicatorLock = document.getElementById('indicatorLock');
-      const indicatorHealth = document.getElementById('indicatorHealth');
-      const indicatorClean = document.getElementById('indicatorClean');
-      const indicatorQuiet = document.getElementById('indicatorQuiet');
-      const indicatorTurbo = document.getElementById('indicatorTurbo');
-      const indicatorSleep = document.getElementById('indicatorSleep');
-      const btnGrid = document.getElementById('btnGrid');
-
-      function updateUI() {
-        // Блокировка
-        if (locked) btnGrid.classList.add('lock-active');
-        else btnGrid.classList.remove('lock-active');
-
-        if (!power) {
-          tempDisplay.innerHTML = 'OFF';
-          modeDisplay.textContent = 'Выключен';
-          powerStatus.textContent = '⛔ Выкл';
-          fanSpeed.textContent = '—';
-          timerDisplay.textContent = '⏲ Таймер выкл';
-          swingStatus.textContent = '↕ —';
-          indicatorIFeel.textContent = '👤 iFeel выкл';
-          indicatorLock.textContent = '🔒 Блок выкл';
-          indicatorHealth.textContent = '❤️ Здоровье выкл';
-          indicatorClean.textContent = '🧹 Очистка выкл';
-          indicatorQuiet.textContent = '🔇 Тихий выкл';
-          indicatorTurbo.textContent = '⚡ Турбо выкл';
-          indicatorSleep.textContent = '🌙 Сон выкл';
-          return;
-        }
-
-        tempDisplay.innerHTML = `${temperature}<span>°</span>`;
-        modeDisplay.textContent = modes[modeIndex];
-        powerStatus.textContent = '🔛 Вкл';
-        fanSpeed.textContent = `💨 ${fanNames[fanIndex]}`;
-        swingStatus.textContent = swing ? '↕ Свинг вкл' : '↕ Свинг выкл';
-        indicatorTurbo.textContent = turbo ? '⚡ Турбо вкл' : '⚡ Турбо выкл';
-        indicatorSleep.textContent = sleep ? '🌙 Сон вкл' : '🌙 Сон выкл';
-        indicatorIFeel.textContent = iFeel ? '👤 iFeel вкл' : '👤 iFeel выкл';
-        indicatorLock.textContent = locked ? '🔒 Блок вкл' : '🔒 Блок выкл';
-        indicatorHealth.textContent = health ? '❤️ Здоровье вкл' : '❤️ Здоровье выкл';
-        indicatorClean.textContent = clean ? '🧹 Очистка вкл' : '🧹 Очистка выкл';
-        indicatorQuiet.textContent = quiet ? '🔇 Тихий вкл' : '🔇 Тихий выкл';
-
-        if (timerMinutes > 0) {
-          const h = Math.floor(timerMinutes / 60);
-          const m = timerMinutes % 60;
-          timerDisplay.textContent = `⏲ Таймер ${h>0?h+'ч ':''}${m}м`;
-        } else {
-          timerDisplay.textContent = '⏲ Таймер выкл';
-        }
-      }
-
-      // ====================
-      // 3. Функции-обработчики кнопок
-      // ====================
-      function sendPower() {
-        if (locked) return;
-        power = !power;
-        if (!power && timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-          timerMinutes = 0;
-        }
-        updateUI();
-        var frequency = 38000;
-        var pattern = [9000, 4500, 560, 560, 560, 560, 560, 1690, 560, 560, 560, 1690, 560, 1690, 560, 1690, 560, 560, 560, 1690, 560, 560, 560, 560, 560, 1690, 560, 560, 560, 1690, 560, 1690, 560, 560];
-        sendIRCode(frequency, pattern);
-      }
-
-      function sendTempUp() {
-        if (locked || !power) return;
-        temperature = Math.min(32, temperature + 1);
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendTempDown() {
-        if (locked || !power) return;
-        temperature = Math.max(16, temperature - 1);
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendMode() {
-        if (locked || !power) return;
-        modeIndex = (modeIndex + 1) % modes.length;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendFan() {
-        if (locked || !power) return;
-        fanIndex = (fanIndex + 1) % fanNames.length;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendSwing() {
-        if (locked || !power) return;
-        swing = !swing;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendTurbo() {
-        if (locked || !power) return;
-        turbo = !turbo;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendSleep() {
-        if (locked || !power) return;
-        sleep = !sleep;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendIFeel() {
-        if (locked || !power) return;
-        iFeel = !iFeel;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendDisplay() {
-        if (locked || !power) return;
-        displayLight = !displayLight;
-        alert(`Подсветка внутреннего блока ${displayLight ? 'включена' : 'выключена'}`);
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendLock() {
-        locked = !locked;
-        updateUI();
-        if (locked) alert('Кнопки заблокированы!');
-        else alert('Блокировка снята.');
-      }
-
-      function sendHealth() {
-        if (locked || !power) return;
-        health = !health;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendClean() {
-        if (locked || !power) return;
-        clean = !clean;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendQuiet() {
-        if (locked || !power) return;
-        quiet = !quiet;
-        updateUI();
-        var freq = 38000;
-        var pat = [9000, 4500];
-        sendIRCode(freq, pat);
-      }
-
-      function sendTimer() {
-        if (locked || !power) return;
-        let val = prompt('Введите время в минутах (0 – выключить):', timerMinutes || '0');
-        if (val === null) return;
-        let mins = parseInt(val);
-        if (isNaN(mins) || mins < 0) mins = 0;
-        timerMinutes = mins;
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-        if (timerMinutes > 0) {
-          timerInterval = setInterval(() => {
-            timerMinutes--;
-            if (timerMinutes <= 0) {
-              clearInterval(timerInterval);
-              timerInterval = null;
-              timerMinutes = 0;
-              power = false;
-              updateUI();
-            }
-            updateUI();
-          }, 60000);
-          alert(`Таймер установлен на ${timerMinutes} мин`);
-        } else {
-          alert('Таймер выключен');
-        }
-        updateUI();
-      }
-
-      function sendReset() {
-        if (locked) return;
-        power = true;
-        temperature = 24;
-        modeIndex = 0;
-        fanIndex = 0;
-        swing = true;
-        turbo = false;
-        sleep = false;
-        iFeel = false;
-        displayLight = true;
-        health = false;
-        clean = false;
-        quiet = false;
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-        timerMinutes = 0;
-        locked = false;
-        updateUI();
-        alert('Настройки сброшены');
-      }
-
-      // ====================
-      // 4. Инициализация
-      // ====================
-      updateUI();
-      console.log("Пульт RODA загружен. ИК-мост доступен:", !!window.irBridge);
-      alert('Скрипт выполнен успешно');
-    } catch(e) {
-      alert('Ошибка: ' + e.message);
+  // ============================================================
+  //  ФУНКЦИЯ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА
+  // ============================================================
+  function updateUI() {
+    // Блокировка
+    if (locked) {
+      btnGrid.classList.add('lock-active');
+    } else {
+      btnGrid.classList.remove('lock-active');
     }
-  })();
+
+    if (!power) {
+      tempDisplay.innerHTML = 'OFF';
+      modeDisplay.textContent = 'Выключен';
+      powerStatus.textContent = '⛔ Выкл';
+      fanSpeed.textContent = '—';
+      timerDisplay.textContent = '⏲ Таймер выкл';
+      swingStatus.textContent = '↕ —';
+      indicatorIFeel.textContent = '👤 iFeel выкл';
+      indicatorLock.textContent = '🔒 Блок выкл';
+      indicatorHealth.textContent = '❤️ Здоровье выкл';
+      indicatorClean.textContent = '🧹 Очистка выкл';
+      indicatorQuiet.textContent = '🔇 Тихий выкл';
+      indicatorTurbo.textContent = '⚡ Турбо выкл';
+      indicatorSleep.textContent = '🌙 Сон выкл';
+      return;
+    }
+
+    // Основные параметры
+    tempDisplay.innerHTML = temperature + '<span>°</span>';
+    modeDisplay.textContent = modes[modeIndex];
+    powerStatus.textContent = '🔛 Вкл';
+    fanSpeed.textContent = '💨 ' + fanNames[fanIndex];
+    swingStatus.textContent = swing ? '↕ Свинг вкл' : '↕ Свинг выкл';
+    indicatorTurbo.textContent = turbo ? '⚡ Турбо вкл' : '⚡ Турбо выкл';
+    indicatorSleep.textContent = sleep ? '🌙 Сон вкл' : '🌙 Сон выкл';
+    indicatorIFeel.textContent = iFeel ? '👤 iFeel вкл' : '👤 iFeel выкл';
+    indicatorLock.textContent = locked ? '🔒 Блок вкл' : '🔒 Блок выкл';
+    indicatorHealth.textContent = health ? '❤️ Здоровье вкл' : '❤️ Здоровье выкл';
+    indicatorClean.textContent = clean ? '🧹 Очистка вкл' : '🧹 Очистка выкл';
+    indicatorQuiet.textContent = quiet ? '🔇 Тихий вкл' : '🔇 Тихий выкл';
+
+    // Таймер
+    if (timerMinutes > 0) {
+      const h = Math.floor(timerMinutes / 60);
+      const m = timerMinutes % 60;
+      timerDisplay.textContent = '⏲ Таймер ' + (h > 0 ? h + 'ч ' : '') + m + 'м';
+    } else {
+      timerDisplay.textContent = '⏲ Таймер выкл';
+    }
+  }
+
+  // ============================================================
+  //  ОТПРАВКА ИК-СИГНАЛА (заглушка)
+  // ============================================================
+  function sendIRCode(frequency, pattern) {
+    if (window.irBridge) {
+      window.irBridge.sendIR(frequency, pattern);
+      console.log('📡 ИК отправлен');
+    } else {
+      console.warn('⚠️ irBridge не доступен');
+    }
+  }
+
+  // ============================================================
+  //  ОБРАБОТЧИКИ СОБЫТИЙ КНОПОК
+  // ============================================================
+  function handlePower() {
+    if (locked) return;
+    power = !power;
+    if (!power && timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      timerMinutes = 0;
+    }
+    updateUI();
+    // Отправка ИК (замените паттерн на реальный)
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690]);
+  }
+
+  function handleTempUp() {
+    if (locked || !power) return;
+    if (temperature < 32) temperature++;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 1690, 560, 560, 560, 560]);
+  }
+
+  function handleTempDown() {
+    if (locked || !power) return;
+    if (temperature > 16) temperature--;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 560]);
+  }
+
+  function handleMode() {
+    if (locked || !power) return;
+    modeIndex = (modeIndex + 1) % modes.length;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 560, 560, 1690]);
+  }
+
+  function handleFan() {
+    if (locked || !power) return;
+    fanIndex = (fanIndex + 1) % fanNames.length;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 560, 560, 560]);
+  }
+
+  function handleSwing() {
+    if (locked || !power) return;
+    swing = !swing;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690, 560, 560]);
+  }
+
+  function handleTurbo() {
+    if (locked || !power) return;
+    turbo = !turbo;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 1690, 560, 1690, 560, 560]);
+  }
+
+  function handleSleep() {
+    if (locked || !power) return;
+    sleep = !sleep;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690, 560, 1690]);
+  }
+
+  function handleIFeel() {
+    if (locked || !power) return;
+    iFeel = !iFeel;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 1690]);
+  }
+
+  function handleDisplay() {
+    if (locked || !power) return;
+    displayLight = !displayLight;
+    alert('Подсветка внутреннего блока ' + (displayLight ? 'включена' : 'выключена'));
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 560, 560, 560]);
+  }
+
+  function handleLock() {
+    locked = !locked;
+    updateUI();
+    alert(locked ? 'Кнопки заблокированы' : 'Блокировка снята');
+  }
+
+  function handleHealth() {
+    if (locked || !power) return;
+    health = !health;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 1690, 560, 560, 560, 560]);
+  }
+
+  function handleClean() {
+    if (locked || !power) return;
+    clean = !clean;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 560]);
+  }
+
+  function handleQuiet() {
+    if (locked || !power) return;
+    quiet = !quiet;
+    updateUI();
+    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690]);
+  }
+
+  function handleTimer() {
+    if (locked || !power) return;
+    let val = prompt('Введите время в минутах (0 – выключить):', timerMinutes || '0');
+    if (val === null) return;
+    let mins = parseInt(val);
+    if (isNaN(mins) || mins < 0) mins = 0;
+    timerMinutes = mins;
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    if (timerMinutes > 0) {
+      timerInterval = setInterval(() => {
+        timerMinutes--;
+        if (timerMinutes <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          power = false;
+          updateUI();
+        } else {
+          updateUI();
+        }
+      }, 60000);
+      alert('Таймер установлен на ' + timerMinutes + ' мин');
+    } else {
+      alert('Таймер выключен');
+    }
+    updateUI();
+  }
+
+  function handleReset() {
+    if (locked) return;
+    // Сброс всех настроек
+    power = true;
+    temperature = 24;
+    modeIndex = 0;
+    fanIndex = 0;
+    swing = true;
+    turbo = false;
+    sleep = false;
+    iFeel = false;
+    displayLight = true;
+    health = false;
+    clean = false;
+    quiet = false;
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    timerMinutes = 0;
+    locked = false;
+    updateUI();
+    alert('Настройки сброшены');
+  }
+
+  // ============================================================
+  //  ПЕРВОНАЧАЛЬНОЕ ОБНОВЛЕНИЕ
+  // ============================================================
+  updateUI();
+  console.log('Пульт RODA загружен');
 </script>
 </body>
 </html>
