@@ -12,6 +12,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
     - name: Setup Node.js 22
       uses: actions/setup-node@v4
       with:
@@ -28,19 +34,15 @@ jobs:
         npm install @capacitor/core @capacitor/cli @capacitor/android
         npx cap init "RODA Remote" "io.ionic.roda" --web-dir=www
         npx cap add android
-        # Создаём папку www и копируем туда наши файлы
         mkdir -p www
         cp -r ../app/* www/
-        # Синхронизируем с Android проектом
         npx cap sync android
 
     - name: Replace Android sources with our IR-enabled version
       run: |
         cd capacitor-app
-        # Удаляем стандартные исходники
         rm -rf android/app/src/main/java/io/ionic/roda/MainActivity.java
         rm -rf android/app/src/main/AndroidManifest.xml
-        # Копируем наши файлы из папки android (в корне репозитория)
         cp -r ../android/app/src/main/java/io/ionic/roda/MainActivity.java android/app/src/main/java/io/ionic/roda/
         cp ../android/app/src/main/AndroidManifest.xml android/app/src/main/
 
