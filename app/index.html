@@ -115,7 +115,6 @@
       color: #888;
       letter-spacing: 1px;
     }
-    /* Индикатор блокировки */
     .lock-active .btn:not(.btn-lock) {
       opacity: 0.4;
       pointer-events: none;
@@ -123,6 +122,33 @@
     .lock-active .btn-lock {
       background: #ff8888;
       box-shadow: 0 3px 0 #aa5555;
+    }
+    /* Стили для автопоиска */
+    .search-panel {
+      margin-top: 10px;
+      padding: 8px;
+      background: #ddd;
+      border-radius: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .search-panel button {
+      background: #ffaa00;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .search-panel button:active {
+      transform: scale(0.95);
+    }
+    #searchStatus {
+      font-size: 12px;
+      color: #333;
+      margin-left: 8px;
     }
   </style>
 </head>
@@ -171,6 +197,13 @@
     <button class="btn btn-green btn-wide" onclick="handleTimer()"><span class="icon">⏲</span>Таймер</button>
     <button class="btn btn-orange btn-wide" onclick="handleReset()"><span class="icon">↺</span>Сброс</button>
   </div>
+
+  <!-- Панель автопоиска -->
+  <div class="search-panel">
+    <button id="searchBtn" onclick="startSearch()">🔍 Автопоиск Вкл</button>
+    <span id="searchStatus">Готов</span>
+  </div>
+
   <div class="brand">RODA RS‑S12A</div>
 </div>
 
@@ -196,6 +229,44 @@
   let clean = false;
   let quiet = false;
 
+  // Сохранённые коды (из localStorage или найденные в процессе)
+  let savedCodes = {
+    power: null,   // { address, command }
+    mode: null,
+    tempUp: null,
+    tempDown: null,
+    fan: null,
+    swing: null,
+    turbo: null,
+    sleep: null,
+    iFeel: null,
+    display: null,
+    health: null,
+    clean: null,
+    quiet: null
+  };
+
+  // Загрузка сохранённых кодов из localStorage
+  function loadCodes() {
+    try {
+      const data = localStorage.getItem('roda_codes');
+      if (data) {
+        const parsed = JSON.parse(data);
+        for (let key in parsed) {
+          if (savedCodes.hasOwnProperty(key)) {
+            savedCodes[key] = parsed[key];
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  // Сохранение кодов в localStorage
+  function saveCodes() {
+    try {
+      localStorage.setItem('roda_codes', JSON.stringify(savedCodes));
+    } catch (e) {}
+  }
+
   // ============================================================
   //  ЭЛЕМЕНТЫ DOM
   // ============================================================
@@ -213,12 +284,12 @@
   const indicatorTurbo = document.getElementById('indicatorTurbo');
   const indicatorSleep = document.getElementById('indicatorSleep');
   const btnGrid = document.getElementById('btnGrid');
+  const searchStatus = document.getElementById('searchStatus');
 
   // ============================================================
   //  ФУНКЦИЯ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА
   // ============================================================
   function updateUI() {
-    // Блокировка
     if (locked) {
       btnGrid.classList.add('lock-active');
     } else {
@@ -242,7 +313,6 @@
       return;
     }
 
-    // Основные параметры
     tempDisplay.innerHTML = temperature + '<span>°</span>';
     modeDisplay.textContent = modes[modeIndex];
     powerStatus.textContent = '🔛 Вкл';
@@ -256,7 +326,6 @@
     indicatorClean.textContent = clean ? '🧹 Очистка вкл' : '🧹 Очистка выкл';
     indicatorQuiet.textContent = quiet ? '🔇 Тихий вкл' : '🔇 Тихий выкл';
 
-    // Таймер
     if (timerMinutes > 0) {
       const h = Math.floor(timerMinutes / 60);
       const m = timerMinutes % 60;
@@ -267,20 +336,151 @@
   }
 
   // ============================================================
-  //  ОТПРАВКА ИК-СИГНАЛА (заглушка)
+  //  ОТПРАВКА ИК-СИГНАЛА
   // ============================================================
   function sendIRCode(frequency, pattern) {
     if (window.irBridge) {
       window.irBridge.sendIR(frequency, pattern);
-      console.log('📡 ИК отправлен');
+      console.log('📡 ИК отправлен, частота ' + frequency + ', длина паттерна ' + pattern.length);
     } else {
       console.warn('⚠️ irBridge не доступен');
     }
   }
 
   // ============================================================
-  //  ОБРАБОТЧИКИ СОБЫТИЙ КНОПОК
+  //  ГЕНЕРАЦИЯ NEC-ПАТТЕРНА
   // ============================================================
+  function necPattern(address, command) {
+    const bits = [];
+    // Преамбула
+    bits.push(9000, 4500);
+    // Адрес (8 бит) + инверсный адрес (8 бит)
+    let addr = address & 0xFF;
+    let invAddr = (~addr) & 0xFF;
+    for (let i = 0; i < 8; i++) {
+      bits.push(560, (addr & (1 << i)) ? 1690 : 560);
+    }
+    for (let i = 0; i < 8; i++) {
+      bits.push(560, (invAddr & (1 << i)) ? 1690 : 560);
+    }
+    // Команда (8 бит) + инверсная команда (8 бит)
+    let cmd = command & 0xFF;
+    let invCmd = (~cmd) & 0xFF;
+    for (let i = 0; i < 8; i++) {
+      bits.push(560, (cmd & (1 << i)) ? 1690 : 560);
+    }
+    for (let i = 0; i < 8; i++) {
+      bits.push(560, (invCmd & (1 << i)) ? 1690 : 560);
+    }
+    // Завершающий бит
+    bits.push(560);
+    return bits;
+  }
+
+  // ============================================================
+  //  АВТОПОИСК КОДА ДЛЯ КНОПКИ ВКЛ/ВЫКЛ
+  // ============================================================
+  // База возможных кодов для RODA (Midea)
+  const possiblePowerCodes = [
+    { address: 0x00, command: 0x21 },
+    { address: 0x01, command: 0x21 },
+    { address: 0x02, command: 0x21 },
+    { address: 0x00, command: 0x22 },
+    { address: 0x01, command: 0x22 },
+    { address: 0x00, command: 0x23 },
+    { address: 0x00, command: 0x24 },
+    { address: 0x00, command: 0x25 },
+    { address: 0x00, command: 0x26 },
+    { address: 0x01, command: 0x23 },
+    { address: 0x01, command: 0x24 },
+    { address: 0x02, command: 0x22 },
+    // Добавьте ещё варианты, если найдёте в интернете
+  ];
+
+  let searchActive = false;
+  let searchIndex = 0;
+  let searchTimer = null;
+  let searchCallback = null; // функция, которая будет вызвана при успешном поиске
+
+  function startSearch() {
+    if (searchActive) {
+      // Если уже идёт поиск – останавливаем
+      stopSearch('Остановлено пользователем');
+      return;
+    }
+    // Проверяем, есть ли уже сохранённый код для power
+    if (savedCodes.power) {
+      if (confirm('Код для включения уже найден. Перезаписать?')) {
+        savedCodes.power = null;
+        saveCodes();
+      } else {
+        return;
+      }
+    }
+
+    searchActive = true;
+    searchIndex = 0;
+    searchStatus.textContent = 'Поиск... (0 / ' + possiblePowerCodes.length + ')';
+    document.getElementById('searchBtn').textContent = '⏹ Остановить';
+    nextPowerCode();
+  }
+
+  function nextPowerCode() {
+    if (!searchActive || searchIndex >= possiblePowerCodes.length) {
+      stopSearch('Коды закончились, не найдено');
+      return;
+    }
+    const code = possiblePowerCodes[searchIndex];
+    const pattern = necPattern(code.address, code.command);
+    sendIRCode(38000, pattern);
+    console.log('Отправлен код #' + searchIndex + ': адрес=' + code.address + ', команда=' + code.command);
+
+    searchStatus.textContent = 'Поиск... (' + (searchIndex+1) + ' / ' + possiblePowerCodes.length + ')';
+
+    // Ждём 3 секунды, затем спрашиваем
+    searchTimer = setTimeout(() => {
+      if (!searchActive) return;
+      const userConfirm = confirm('Кондиционер отреагировал? (код #' + (searchIndex+1) + ')');
+      if (userConfirm) {
+        // Сохраняем найденный код
+        savedCodes.power = { address: code.address, command: code.command };
+        saveCodes();
+        stopSearch('✅ Код найден! Адрес=' + code.address + ', команда=' + code.command);
+        alert('Код для включения сохранён! Теперь кнопка Вкл/Выкл будет работать.');
+        // Обновляем статус
+        searchStatus.textContent = '✅ Найден: ' + code.address + ':' + code.command;
+      } else {
+        searchIndex++;
+        nextPowerCode();
+      }
+    }, 3000);
+  }
+
+  function stopSearch(message) {
+    searchActive = false;
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+      searchTimer = null;
+    }
+    searchStatus.textContent = message || 'Поиск остановлен';
+    document.getElementById('searchBtn').textContent = '🔍 Автопоиск Вкл';
+  }
+
+  // ============================================================
+  //  ОБРАБОТЧИКИ КНОПОК (используют сохранённые коды)
+  // ============================================================
+  function sendCodeFromSaved(action) {
+    const code = savedCodes[action];
+    if (code) {
+      const pattern = necPattern(code.address, code.command);
+      sendIRCode(38000, pattern);
+      return true;
+    } else {
+      console.warn('Код для ' + action + ' не найден. Запустите автопоиск.');
+      return false;
+    }
+  }
+
   function handlePower() {
     if (locked) return;
     power = !power;
@@ -290,71 +490,84 @@
       timerMinutes = 0;
     }
     updateUI();
-    // Отправка ИК (замените паттерн на реальный)
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690]);
+    // Отправляем сохранённый код, если есть, иначе ничего
+    if (savedCodes.power) {
+      sendCodeFromSaved('power');
+    } else {
+      alert('Код для включения не найден. Запустите автопоиск.');
+    }
   }
 
   function handleTempUp() {
     if (locked || !power) return;
     if (temperature < 32) temperature++;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 1690, 560, 560, 560, 560]);
+    if (savedCodes.tempUp) sendCodeFromSaved('tempUp');
+    else alert('Код для + не найден');
   }
 
   function handleTempDown() {
     if (locked || !power) return;
     if (temperature > 16) temperature--;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 560]);
+    if (savedCodes.tempDown) sendCodeFromSaved('tempDown');
+    else alert('Код для - не найден');
   }
 
   function handleMode() {
     if (locked || !power) return;
     modeIndex = (modeIndex + 1) % modes.length;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 560, 560, 1690]);
+    if (savedCodes.mode) sendCodeFromSaved('mode');
+    else alert('Код для режима не найден');
   }
 
   function handleFan() {
     if (locked || !power) return;
     fanIndex = (fanIndex + 1) % fanNames.length;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 560, 560, 560]);
+    if (savedCodes.fan) sendCodeFromSaved('fan');
+    else alert('Код для вентилятора не найден');
   }
 
   function handleSwing() {
     if (locked || !power) return;
     swing = !swing;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690, 560, 560]);
+    if (savedCodes.swing) sendCodeFromSaved('swing');
+    else alert('Код для свинга не найден');
   }
 
   function handleTurbo() {
     if (locked || !power) return;
     turbo = !turbo;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 1690, 560, 1690, 560, 560]);
+    if (savedCodes.turbo) sendCodeFromSaved('turbo');
+    else alert('Код для турбо не найден');
   }
 
   function handleSleep() {
     if (locked || !power) return;
     sleep = !sleep;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690, 560, 1690]);
+    if (savedCodes.sleep) sendCodeFromSaved('sleep');
+    else alert('Код для сна не найден');
   }
 
   function handleIFeel() {
     if (locked || !power) return;
     iFeel = !iFeel;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 1690]);
+    if (savedCodes.iFeel) sendCodeFromSaved('iFeel');
+    else alert('Код для iFeel не найден');
   }
 
   function handleDisplay() {
     if (locked || !power) return;
     displayLight = !displayLight;
     alert('Подсветка внутреннего блока ' + (displayLight ? 'включена' : 'выключена'));
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 560, 560, 560]);
+    if (savedCodes.display) sendCodeFromSaved('display');
+    else alert('Код для дисплея не найден');
   }
 
   function handleLock() {
@@ -367,21 +580,24 @@
     if (locked || !power) return;
     health = !health;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 1690, 560, 560, 560, 560]);
+    if (savedCodes.health) sendCodeFromSaved('health');
+    else alert('Код для здоровья не найден');
   }
 
   function handleClean() {
     if (locked || !power) return;
     clean = !clean;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 1690, 560, 560]);
+    if (savedCodes.clean) sendCodeFromSaved('clean');
+    else alert('Код для очистки не найден');
   }
 
   function handleQuiet() {
     if (locked || !power) return;
     quiet = !quiet;
     updateUI();
-    sendIRCode(38000, [9000, 4500, 560, 560, 560, 560, 560, 1690]);
+    if (savedCodes.quiet) sendCodeFromSaved('quiet');
+    else alert('Код для тихого режима не найден');
   }
 
   function handleTimer() {
@@ -416,7 +632,6 @@
 
   function handleReset() {
     if (locked) return;
-    // Сброс всех настроек
     power = true;
     temperature = 24;
     modeIndex = 0;
@@ -440,20 +655,11 @@
   }
 
   // ============================================================
-  //  ПЕРВОНАЧАЛЬНОЕ ОБНОВЛЕНИЕ
+  //  ИНИЦИАЛИЗАЦИЯ
   // ============================================================
+  loadCodes();
   updateUI();
-  console.log('Пульт RODA загружен');
-  // Проверка наличия irBridge через 2 секунды после загрузки
-setTimeout(function() {
-    if (window.irBridge) {
-        console.log('✅ irBridge найден!');
-        alert('IR bridge доступен!'); // временно для проверки
-    } else {
-        console.warn('❌ irBridge отсутствует');
-        alert('IR bridge НЕ найден!');
-    }
-}, 2000);
+  console.log('Пульт RODA загружен. Сохранённые коды:', savedCodes);
 </script>
 </body>
 </html>
