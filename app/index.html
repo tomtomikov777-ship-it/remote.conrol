@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
@@ -123,8 +123,8 @@
       background: #ff8888;
       box-shadow: 0 3px 0 #aa5555;
     }
-    /* Стили для автопоиска */
-    .search-panel {
+    /* Панель обучения */
+    .learn-panel {
       margin-top: 10px;
       padding: 8px;
       background: #ddd;
@@ -132,9 +132,15 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      justify-content: space-between;
+      gap: 6px;
     }
-    .search-panel button {
+    .learn-panel select {
+      flex: 1;
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #aaa;
+    }
+    .learn-panel button {
       background: #ffaa00;
       border: none;
       border-radius: 6px;
@@ -142,13 +148,12 @@
       font-weight: bold;
       cursor: pointer;
     }
-    .search-panel button:active {
-      transform: scale(0.95);
-    }
-    #searchStatus {
-      font-size: 12px;
+    .learn-panel button:active { transform: scale(0.95); }
+    #learnStatus {
+      font-size: 11px;
       color: #333;
-      margin-left: 8px;
+      flex-basis: 100%;
+      text-align: center;
     }
   </style>
 </head>
@@ -198,10 +203,25 @@
     <button class="btn btn-orange btn-wide" onclick="handleReset()"><span class="icon">↺</span>Сброс</button>
   </div>
 
-  <!-- Панель автопоиска -->
-  <div class="search-panel">
-    <button id="searchBtn" onclick="startSearch()">🔍 Автопоиск Вкл</button>
-    <span id="searchStatus">Готов</span>
+  <!-- Панель обучения -->
+  <div class="learn-panel">
+    <select id="learnAction">
+      <option value="power">Вкл/Выкл</option>
+      <option value="mode">Режим</option>
+      <option value="tempUp">Температура +</option>
+      <option value="tempDown">Температура −</option>
+      <option value="fan">Вентилятор</option>
+      <option value="swing">Свинг</option>
+      <option value="turbo">Турбо</option>
+      <option value="sleep">Сон</option>
+      <option value="iFeel">iFeel</option>
+      <option value="display">Дисплей (подсветка)</option>
+      <option value="health">Здоровье</option>
+      <option value="clean">Очистка</option>
+      <option value="quiet">Тихий</option>
+    </select>
+    <button id="learnBtn" onclick="startLearning()">🔍 Найти код</button>
+    <div id="learnStatus">Выберите функцию и нажмите "Найти код"</div>
   </div>
 
   <div class="brand">RODA RS‑S12A</div>
@@ -213,9 +233,9 @@
   // ============================================================
   let power = true;
   let temperature = 24;
-  let modeIndex = 0;              // 0-охлаждение,1-обогрев,2-вентиляция,3-осушение,4-авто
+  let modeIndex = 0;
   const modes = ['❄️ Охлаждение', '☀️ Обогрев', '💨 Вентиляция', '💧 Осушение', '🔄 Авто'];
-  let fanIndex = 0;              // 0-Авто,1-Низк,2-Сред,3-Выс
+  let fanIndex = 0;
   const fanNames = ['Авто','Низк','Сред','Выс'];
   let swing = true;
   let turbo = false;
@@ -229,24 +249,36 @@
   let clean = false;
   let quiet = false;
 
-  // Сохранённые коды (из localStorage или найденные в процессе)
+  // Хранилище кодов (ключ – название действия)
   let savedCodes = {
-    power: null,   // { address, command }
-    mode: null,
-    tempUp: null,
-    tempDown: null,
-    fan: null,
-    swing: null,
-    turbo: null,
-    sleep: null,
-    iFeel: null,
-    display: null,
-    health: null,
-    clean: null,
-    quiet: null
+    power: null, mode: null, tempUp: null, tempDown: null, fan: null,
+    swing: null, turbo: null, sleep: null, iFeel: null, display: null,
+    health: null, clean: null, quiet: null
   };
 
-  // Загрузка сохранённых кодов из localStorage
+  // ============================================================
+  //  БАЗА ВОЗМОЖНЫХ КОДОВ ДЛЯ RODA (Midea)
+  // ============================================================
+  // Для каждой функции задаём массив возможных комбинаций (address, command)
+  const codeDatabase = {
+    power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}, {a:0x02,c:0x21}, {a:0x00,c:0x22}, {a:0x01,c:0x22}],
+    mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}, {a:0x00,c:0x23}],
+    tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+    tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+    fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+    swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+    turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+    sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+    iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+    display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+    health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+    clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+    quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+  };
+
+  // ============================================================
+  //  ЗАГРУЗКА / СОХРАНЕНИЕ КОДОВ В localStorage
+  // ============================================================
   function loadCodes() {
     try {
       const data = localStorage.getItem('roda_codes');
@@ -260,7 +292,6 @@
       }
     } catch (e) {}
   }
-  // Сохранение кодов в localStorage
   function saveCodes() {
     try {
       localStorage.setItem('roda_codes', JSON.stringify(savedCodes));
@@ -284,17 +315,16 @@
   const indicatorTurbo = document.getElementById('indicatorTurbo');
   const indicatorSleep = document.getElementById('indicatorSleep');
   const btnGrid = document.getElementById('btnGrid');
-  const searchStatus = document.getElementById('searchStatus');
+  const learnStatus = document.getElementById('learnStatus');
+  const learnAction = document.getElementById('learnAction');
+  const learnBtn = document.getElementById('learnBtn');
 
   // ============================================================
-  //  ФУНКЦИЯ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА
+  //  ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
   // ============================================================
   function updateUI() {
-    if (locked) {
-      btnGrid.classList.add('lock-active');
-    } else {
-      btnGrid.classList.remove('lock-active');
-    }
+    if (locked) btnGrid.classList.add('lock-active');
+    else btnGrid.classList.remove('lock-active');
 
     if (!power) {
       tempDisplay.innerHTML = 'OFF';
@@ -312,7 +342,6 @@
       indicatorSleep.textContent = '🌙 Сон выкл';
       return;
     }
-
     tempDisplay.innerHTML = temperature + '<span>°</span>';
     modeDisplay.textContent = modes[modeIndex];
     powerStatus.textContent = '🔛 Вкл';
@@ -325,7 +354,6 @@
     indicatorHealth.textContent = health ? '❤️ Здоровье вкл' : '❤️ Здоровье выкл';
     indicatorClean.textContent = clean ? '🧹 Очистка вкл' : '🧹 Очистка выкл';
     indicatorQuiet.textContent = quiet ? '🔇 Тихий вкл' : '🔇 Тихий выкл';
-
     if (timerMinutes > 0) {
       const h = Math.floor(timerMinutes / 60);
       const m = timerMinutes % 60;
@@ -341,7 +369,7 @@
   function sendIRCode(frequency, pattern) {
     if (window.irBridge) {
       window.irBridge.sendIR(frequency, pattern);
-      console.log('📡 ИК отправлен, частота ' + frequency + ', длина паттерна ' + pattern.length);
+      console.log('📡 ИК отправлен, длина паттерна ' + pattern.length);
     } else {
       console.warn('⚠️ irBridge не доступен');
     }
@@ -351,10 +379,7 @@
   //  ГЕНЕРАЦИЯ NEC-ПАТТЕРНА
   // ============================================================
   function necPattern(address, command) {
-    const bits = [];
-    // Преамбула
-    bits.push(9000, 4500);
-    // Адрес (8 бит) + инверсный адрес (8 бит)
+    const bits = [9000, 4500];
     let addr = address & 0xFF;
     let invAddr = (~addr) & 0xFF;
     for (let i = 0; i < 8; i++) {
@@ -363,7 +388,6 @@
     for (let i = 0; i < 8; i++) {
       bits.push(560, (invAddr & (1 << i)) ? 1690 : 560);
     }
-    // Команда (8 бит) + инверсная команда (8 бит)
     let cmd = command & 0xFF;
     let invCmd = (~cmd) & 0xFF;
     for (let i = 0; i < 8; i++) {
@@ -372,234 +396,185 @@
     for (let i = 0; i < 8; i++) {
       bits.push(560, (invCmd & (1 << i)) ? 1690 : 560);
     }
-    // Завершающий бит
     bits.push(560);
     return bits;
   }
 
   // ============================================================
-  //  АВТОПОИСК КОДА ДЛЯ КНОПКИ ВКЛ/ВЫКЛ
+  //  УНИВЕРСАЛЬНЫЙ АВТОПОИСК ДЛЯ ЛЮБОЙ ФУНКЦИИ
   // ============================================================
-  // База возможных кодов для RODA (Midea)
-  const possiblePowerCodes = [
-    { address: 0x00, command: 0x21 },
-    { address: 0x01, command: 0x21 },
-    { address: 0x02, command: 0x21 },
-    { address: 0x00, command: 0x22 },
-    { address: 0x01, command: 0x22 },
-    { address: 0x00, command: 0x23 },
-    { address: 0x00, command: 0x24 },
-    { address: 0x00, command: 0x25 },
-    { address: 0x00, command: 0x26 },
-    { address: 0x01, command: 0x23 },
-    { address: 0x01, command: 0x24 },
-    { address: 0x02, command: 0x22 },
-    // Добавьте ещё варианты, если найдёте в интернете
-  ];
+  let learningActive = false;
+  let learnIndex = 0;
+  let learnTimer = null;
+  let currentAction = null;
 
-  let searchActive = false;
-  let searchIndex = 0;
-  let searchTimer = null;
-  let searchCallback = null; // функция, которая будет вызвана при успешном поиске
-
-  function startSearch() {
-    if (searchActive) {
-      // Если уже идёт поиск – останавливаем
-      stopSearch('Остановлено пользователем');
+  function startLearning() {
+    const action = learnAction.value;
+    if (!codeDatabase[action]) {
+      learnStatus.textContent = '❌ Нет базы для этой функции';
       return;
     }
-    // Проверяем, есть ли уже сохранённый код для power
-    if (savedCodes.power) {
-      if (confirm('Код для включения уже найден. Перезаписать?')) {
-        savedCodes.power = null;
-        saveCodes();
-      } else {
+    if (learningActive) {
+      // Если уже идёт обучение – останавливаем
+      stopLearning('Остановлено пользователем');
+      return;
+    }
+    // Проверяем, есть ли уже сохранённый код
+    if (savedCodes[action]) {
+      if (!confirm('Код для "' + learnAction.options[learnAction.selectedIndex].text + '" уже найден. Перезаписать?')) {
         return;
       }
+      savedCodes[action] = null;
+      saveCodes();
     }
 
-    searchActive = true;
-    searchIndex = 0;
-    searchStatus.textContent = 'Поиск... (0 / ' + possiblePowerCodes.length + ')';
-    document.getElementById('searchBtn').textContent = '⏹ Остановить';
-    nextPowerCode();
+    learningActive = true;
+    learnIndex = 0;
+    currentAction = action;
+    learnBtn.textContent = '⏹ Остановить';
+    learnStatus.textContent = 'Поиск для "' + learnAction.options[learnAction.selectedIndex].text + '"... (0/' + codeDatabase[action].length + ')';
+    nextLearnCode();
   }
 
-  function nextPowerCode() {
-    if (!searchActive || searchIndex >= possiblePowerCodes.length) {
-      stopSearch('Коды закончились, не найдено');
+  function nextLearnCode() {
+    if (!learningActive || learnIndex >= codeDatabase[currentAction].length) {
+      stopLearning('❌ Коды закончились, не найдено');
       return;
     }
-    const code = possiblePowerCodes[searchIndex];
-    const pattern = necPattern(code.address, code.command);
+    const entry = codeDatabase[currentAction][learnIndex];
+    const pattern = necPattern(entry.a, entry.c);
     sendIRCode(38000, pattern);
-    console.log('Отправлен код #' + searchIndex + ': адрес=' + code.address + ', команда=' + code.command);
+    console.log('Отправлен код #' + learnIndex + ': адрес=' + entry.a + ', команда=' + entry.c);
 
-    searchStatus.textContent = 'Поиск... (' + (searchIndex+1) + ' / ' + possiblePowerCodes.length + ')';
+    learnStatus.textContent = 'Поиск... (' + (learnIndex+1) + '/' + codeDatabase[currentAction].length + ')';
 
-    // Ждём 3 секунды, затем спрашиваем
-    searchTimer = setTimeout(() => {
-      if (!searchActive) return;
-      const userConfirm = confirm('Кондиционер отреагировал? (код #' + (searchIndex+1) + ')');
+    learnTimer = setTimeout(() => {
+      if (!learningActive) return;
+      const userConfirm = confirm('Кондиционер отреагировал? (код #' + (learnIndex+1) + ')');
       if (userConfirm) {
-        // Сохраняем найденный код
-        savedCodes.power = { address: code.address, command: code.command };
+        savedCodes[currentAction] = { address: entry.a, command: entry.c };
         saveCodes();
-        stopSearch('✅ Код найден! Адрес=' + code.address + ', команда=' + code.command);
-        alert('Код для включения сохранён! Теперь кнопка Вкл/Выкл будет работать.');
-        // Обновляем статус
-        searchStatus.textContent = '✅ Найден: ' + code.address + ':' + code.command;
+        stopLearning('✅ Код найден! адрес=' + entry.a + ', команда=' + entry.c);
+        alert('Код сохранён для "' + learnAction.options[learnAction.selectedIndex].text + '"');
       } else {
-        searchIndex++;
-        nextPowerCode();
+        learnIndex++;
+        nextLearnCode();
       }
     }, 3000);
   }
 
-  function stopSearch(message) {
-    searchActive = false;
-    if (searchTimer) {
-      clearTimeout(searchTimer);
-      searchTimer = null;
+  function stopLearning(message) {
+    learningActive = false;
+    if (learnTimer) {
+      clearTimeout(learnTimer);
+      learnTimer = null;
     }
-    searchStatus.textContent = message || 'Поиск остановлен';
-    document.getElementById('searchBtn').textContent = '🔍 Автопоиск Вкл';
+    learnStatus.textContent = message || 'Поиск остановлен';
+    learnBtn.textContent = '🔍 Найти код';
   }
 
   // ============================================================
-  //  ОБРАБОТЧИКИ КНОПОК (используют сохранённые коды)
+  //  ОТПРАВКА СОХРАНЁННОГО КОДА (для кнопок)
   // ============================================================
-  function sendCodeFromSaved(action) {
+  function sendSavedCode(action) {
     const code = savedCodes[action];
     if (code) {
       const pattern = necPattern(code.address, code.command);
       sendIRCode(38000, pattern);
       return true;
     } else {
-      console.warn('Код для ' + action + ' не найден. Запустите автопоиск.');
+      console.warn('Код для ' + action + ' не найден');
       return false;
     }
   }
 
+  // ============================================================
+  //  ОБРАБОТЧИКИ КНОПОК
+  // ============================================================
   function handlePower() {
     if (locked) return;
     power = !power;
-    if (!power && timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      timerMinutes = 0;
-    }
+    if (!power && timerInterval) { clearInterval(timerInterval); timerInterval = null; timerMinutes = 0; }
     updateUI();
-    // Отправляем сохранённый код, если есть, иначе ничего
-    if (savedCodes.power) {
-      sendCodeFromSaved('power');
-    } else {
-      alert('Код для включения не найден. Запустите автопоиск.');
-    }
+    if (!sendSavedCode('power')) alert('Код для включения не найден. Используйте обучение.');
   }
-
   function handleTempUp() {
     if (locked || !power) return;
     if (temperature < 32) temperature++;
     updateUI();
-    if (savedCodes.tempUp) sendCodeFromSaved('tempUp');
-    else alert('Код для + не найден');
+    if (!sendSavedCode('tempUp')) alert('Код для + не найден.');
   }
-
   function handleTempDown() {
     if (locked || !power) return;
     if (temperature > 16) temperature--;
     updateUI();
-    if (savedCodes.tempDown) sendCodeFromSaved('tempDown');
-    else alert('Код для - не найден');
+    if (!sendSavedCode('tempDown')) alert('Код для − не найден.');
   }
-
   function handleMode() {
     if (locked || !power) return;
     modeIndex = (modeIndex + 1) % modes.length;
     updateUI();
-    if (savedCodes.mode) sendCodeFromSaved('mode');
-    else alert('Код для режима не найден');
+    if (!sendSavedCode('mode')) alert('Код для режима не найден.');
   }
-
   function handleFan() {
     if (locked || !power) return;
     fanIndex = (fanIndex + 1) % fanNames.length;
     updateUI();
-    if (savedCodes.fan) sendCodeFromSaved('fan');
-    else alert('Код для вентилятора не найден');
+    if (!sendSavedCode('fan')) alert('Код для вентилятора не найден.');
   }
-
   function handleSwing() {
     if (locked || !power) return;
     swing = !swing;
     updateUI();
-    if (savedCodes.swing) sendCodeFromSaved('swing');
-    else alert('Код для свинга не найден');
+    if (!sendSavedCode('swing')) alert('Код для свинга не найден.');
   }
-
   function handleTurbo() {
     if (locked || !power) return;
     turbo = !turbo;
     updateUI();
-    if (savedCodes.turbo) sendCodeFromSaved('turbo');
-    else alert('Код для турбо не найден');
+    if (!sendSavedCode('turbo')) alert('Код для турбо не найден.');
   }
-
   function handleSleep() {
     if (locked || !power) return;
     sleep = !sleep;
     updateUI();
-    if (savedCodes.sleep) sendCodeFromSaved('sleep');
-    else alert('Код для сна не найден');
+    if (!sendSavedCode('sleep')) alert('Код для сна не найден.');
   }
-
   function handleIFeel() {
     if (locked || !power) return;
     iFeel = !iFeel;
     updateUI();
-    if (savedCodes.iFeel) sendCodeFromSaved('iFeel');
-    else alert('Код для iFeel не найден');
+    if (!sendSavedCode('iFeel')) alert('Код для iFeel не найден.');
   }
-
   function handleDisplay() {
     if (locked || !power) return;
     displayLight = !displayLight;
     alert('Подсветка внутреннего блока ' + (displayLight ? 'включена' : 'выключена'));
-    if (savedCodes.display) sendCodeFromSaved('display');
-    else alert('Код для дисплея не найден');
+    if (!sendSavedCode('display')) alert('Код для дисплея не найден.');
   }
-
   function handleLock() {
     locked = !locked;
     updateUI();
     alert(locked ? 'Кнопки заблокированы' : 'Блокировка снята');
   }
-
   function handleHealth() {
     if (locked || !power) return;
     health = !health;
     updateUI();
-    if (savedCodes.health) sendCodeFromSaved('health');
-    else alert('Код для здоровья не найден');
+    if (!sendSavedCode('health')) alert('Код для здоровья не найден.');
   }
-
   function handleClean() {
     if (locked || !power) return;
     clean = !clean;
     updateUI();
-    if (savedCodes.clean) sendCodeFromSaved('clean');
-    else alert('Код для очистки не найден');
+    if (!sendSavedCode('clean')) alert('Код для очистки не найден.');
   }
-
   function handleQuiet() {
     if (locked || !power) return;
     quiet = !quiet;
     updateUI();
-    if (savedCodes.quiet) sendCodeFromSaved('quiet');
-    else alert('Код для тихого режима не найден');
+    if (!sendSavedCode('quiet')) alert('Код для тихого режима не найден.');
   }
-
   function handleTimer() {
     if (locked || !power) return;
     let val = prompt('Введите время в минутах (0 – выключить):', timerMinutes || '0');
@@ -607,10 +582,7 @@
     let mins = parseInt(val);
     if (isNaN(mins) || mins < 0) mins = 0;
     timerMinutes = mins;
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     if (timerMinutes > 0) {
       timerInterval = setInterval(() => {
         timerMinutes--;
@@ -629,7 +601,6 @@
     }
     updateUI();
   }
-
   function handleReset() {
     if (locked) return;
     power = true;
@@ -644,10 +615,7 @@
     health = false;
     clean = false;
     quiet = false;
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     timerMinutes = 0;
     locked = false;
     updateUI();
@@ -662,4 +630,4 @@
   console.log('Пульт RODA загружен. Сохранённые коды:', savedCodes);
 </script>
 </body>
-</html>
+</html> 
