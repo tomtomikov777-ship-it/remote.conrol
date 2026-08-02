@@ -444,6 +444,16 @@
   // ============================================================
   updateUI();
   console.log('Пульт RODA загружен');
+  // Проверка наличия irBridge через 2 секунды после загрузки
+setTimeout(function() {
+    if (window.irBridge) {
+        console.log('✅ irBridge найден!');
+        alert('IR bridge доступен!'); // временно для проверки
+    } else {
+        console.warn('❌ irBridge отсутствует');
+        alert('IR bridge НЕ найден!');
+    }
+}, 2000);
 </script>
 </body>
 </html>
