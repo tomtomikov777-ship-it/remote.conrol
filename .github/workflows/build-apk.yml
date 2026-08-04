@@ -32,7 +32,7 @@ jobs:
         cd capacitor-app
         npm init -y
         npm install @capacitor/core @capacitor/cli @capacitor/android
-        npx cap init "Remote Control" "io.remote.control" --web-dir=www
+        npx cap init "Remote Control" "io.ionic.roda" --web-dir=www
         npx cap add android
         mkdir -p www
         cp -r ../app/* www/
@@ -41,10 +41,11 @@ jobs:
     - name: Replace Android sources with our IR-enabled version
       run: |
         cd capacitor-app
-        rm -rf android/app/src/main/java/io/ionic/roda/MainActivity.java
-        rm -rf android/app/src/main/AndroidManifest.xml
-        cp -r ../android/app/src/main/java/io/ionic/roda/MainActivity.java android/app/src/main/java/io/ionic/roda/
-        cp ../android/app/src/main/AndroidManifest.xml android/app/src/main/
+        # Создаём нужные папки, если их нет
+        mkdir -p android/app/src/main/java/io/ionic/roda
+        # Копируем наши файлы (если они есть) и игнорируем ошибки
+        cp ../android/app/src/main/AndroidManifest.xml android/app/src/main/ 2>/dev/null || true
+        cp ../android/app/src/main/java/io/ionic/roda/MainActivity.java android/app/src/main/java/io/ionic/roda/ 2>/dev/null || true
 
     - name: Build APK
       run: |
