@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Control – универсальный ИК-пульт</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: #0055aa;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 25px;
+        }
+        .badge {
+            display: inline-block;
+            background: #0055aa;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 8px;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature-item {
+            background: #f0f4f8;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .feature-item .icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .feature-item h3 {
+            font-size: 1rem;
+            color: #0055aa;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #28a745;
+            color: #fff;
+            padding: 14px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 10px 0;
+            transition: 0.2s;
+        }
+        .download-btn:hover {
+            background: #218838;
+            transform: scale(1.02);
+        }
+        .github-link {
+            display: inline-block;
+            margin-left: 15px;
+            color: #0055aa;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .github-link:hover {
+            text-decoration: underline;
+        }
+        .privacy-link {
+            display: block;
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #888;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📱 Remote Control</h1>
+    <p class="subtitle">
+        <span class="badge">Универсальный</span>
+        <span class="badge">ИК-пульт</span>
+        <span class="badge">Бесплатно</span>
+    </p>
+    <p style="font-size:1.1rem; margin-bottom:20px;">
+        Управляйте кондиционером со смартфона. Поддерживает <strong>RODA, Midea, Gree, Ballu, Samsung, LG, Panasonic, Hisense, Haier, TCL, Electrolux, Zanussi</strong> и другие марки.
+    </p>
+
+    <div class="features">
+        <div class="feature-item">
+            <span class="icon">🎯</span>
+            <h3>Автообучение</h3>
+            <p>Приложение само перебирает коды — вы просто подтверждаете, когда кондиционер отреагирует.</p>
+        </div>
+        <div class="feature-item">
+            <span class="icon">🎨</span>
+            <h3>Кастомизация</h3>
+            <p>Светлая/тёмная тема, выбор цвета дисплея, вибро и звук при нажатии.</p>
+        </div>
+        <div class="feature-item">
+            <span class="icon">💾</span>
+            <h3>Сохранение</h3>
+            <p>Все найденные коды и настройки сохраняются локально и не теряются.</p>
+        </div>
+        <div class="feature-item">
+            <span class="icon">🔌</span>
+            <h3>ИК-порт</h3>
+            <p>Работает на устройствах со встроенным ИК-передатчиком (поддерживает большинство Android-телефонов).</p>
+        </div>
+    </div>
+
+    <p style="margin: 20px 0;">
+        <a href="#" class="download-btn" id="downloadLink">⬇️ Скачать APK</a>
+        <a href="https://github.com/[ваш-ник]/roda.remote" class="github-link" target="_blank">🔗 Исходный код на GitHub</a>
+    </p>
+
+    <p style="font-size:0.95rem; color:#555;">
+        📌 <strong>Версия:</strong> 2.1 &nbsp;|&nbsp; 📅 <strong>Обновлено:</strong> 04.08.2026
+    </p>
+
+    <a href="privacy-policy.html" class="privacy-link">Политика конфиденциальности</a>
+
+    <div class="footer">
+        Разработано с ❤️ для вашего комфорта. Приложение распространяется бесплатно.
+    </div>
+</div>
+
+<script>
+    // Замените ссылку на реальную ссылку для скачивания APK
+    // Например, можно загрузить APK в релизы GitHub и указать ссылку на него.
+    document.getElementById('downloadLink').addEventListener('click', function(e) {
+        e.preventDefault();
+        // Вставьте сюда свою ссылку на APK (например, с релизов GitHub)
+        alert('Ссылка на скачивание APK будет добавлена позже. Вы можете загрузить APK из артефактов GitHub Actions или из релизов.');
+        // window.location.href = 'https://github.com/[ваш-ник]/roda.remote/releases/download/v2.1/app-debug.apk';
+    });
+</script>
+</body>
+</html>
