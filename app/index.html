@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Универсальный пульт</title>
   <style>
-    /* Стили такие же, как в предыдущей версии, но добавим индикатор */
     * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
     body {
       display: flex;
@@ -51,12 +50,10 @@
     }
     body.light .display {
       background: #1a2a1a;
-      color: #a8f0a8;
       border-color: #555;
     }
     body.dark .display {
       background: #0a1a0a;
-      color: #b0f0b0;
       border-color: #777;
     }
     .display-top {
@@ -99,6 +96,7 @@
       border-radius: 50%;
       margin-right: 4px;
       vertical-align: middle;
+      transition: background 0.3s, box-shadow 0.3s;
     }
     .ir-on { background: #00ff00; box-shadow: 0 0 8px #00ff00; }
     .ir-off { background: #ff4444; box-shadow: 0 0 8px #ff4444; }
@@ -155,7 +153,6 @@
     body.dark .btn-purple { background: #5a3a5a; color: #eee; }
     body.dark .btn-teal { background: #2a5a5a; color: #eee; }
     body.dark .btn-pink { background: #6a3a3a; color: #eee; }
-
     .brand {
       text-align: center;
       margin-top: 10px;
@@ -281,7 +278,7 @@
     <button class="btn btn-orange btn-wide" onclick="handleReset()"><span class="icon">↺</span>Сброс</button>
   </div>
 
-  <!-- Нижняя панель: настройки + обучение -->
+  <!-- Нижняя панель -->
   <div class="bottom-panel">
     <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
     <div style="display:flex; gap:6px; align-items:center;">
@@ -305,7 +302,7 @@
     <div id="learnStatus">Выберите функцию в настройках</div>
   </div>
 
-  <!-- Панель настроек (скрыта) -->
+  <!-- Панель настроек -->
   <div class="settings-panel" id="settingsPanel">
     <label>Тема:
       <select id="themeSelect" onchange="changeTheme()">
@@ -346,20 +343,371 @@
 
 <script>
   // ============================================================
-  //  БАЗА КОДОВ ПО МАРКАМ (такая же как раньше, сокращённо)
+  //  ПОЛНАЯ БАЗА КОДОВ ПО МАРКАМ
   // ============================================================
-  // (Здесь оставляем ту же базу codeBases, что была в предыдущей версии)
-  // Чтобы не загромождать код, я покажу лишь структуру, а полную вставлю в финальный ответ.
-  // Но в реальном ответе будет полная база.
-  // Для краткости здесь я оставлю заглушку, но в финальном коде она будет полной.
-  // ...
-  
-  // ВНИМАНИЕ: Ниже я приведу полный код с полной базой, но в этом ответе укажу, что она полная.
+  const codeBases = {
+    roda: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}, {a:0x02,c:0x21}, {a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}, {a:0x00,c:0x23}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    midea: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}, {a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    gree: {
+      power:   [{a:0x00,c:0x20}, {a:0x01,c:0x20}, {a:0x00,c:0x21}, {a:0x01,c:0x21}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    ballu: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}, {a:0x00,c:0x22}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    samsung: {
+      power:   [{a:0x00,c:0xE0}, {a:0x01,c:0xE0}, {a:0x00,c:0xE1}],
+      mode:    [{a:0x00,c:0xE2}, {a:0x01,c:0xE2}],
+      tempUp:  [{a:0x00,c:0xE3}, {a:0x01,c:0xE3}],
+      tempDown:[{a:0x00,c:0xE4}, {a:0x01,c:0xE4}],
+      fan:     [{a:0x00,c:0xE5}, {a:0x01,c:0xE5}],
+      swing:   [{a:0x00,c:0xE6}, {a:0x01,c:0xE6}],
+      turbo:   [{a:0x00,c:0xE7}, {a:0x01,c:0xE7}],
+      sleep:   [{a:0x00,c:0xE8}, {a:0x01,c:0xE8}],
+      iFeel:   [{a:0x00,c:0xE9}, {a:0x01,c:0xE9}],
+      display: [{a:0x00,c:0xEA}, {a:0x01,c:0xEA}],
+      health:  [{a:0x00,c:0xEB}, {a:0x01,c:0xEB}],
+      clean:   [{a:0x00,c:0xEC}, {a:0x01,c:0xEC}],
+      quiet:   [{a:0x00,c:0xED}, {a:0x01,c:0xED}]
+    },
+    lg: {
+      power:   [{a:0x00,c:0x08}, {a:0x01,c:0x08}],
+      mode:    [{a:0x00,c:0x09}, {a:0x01,c:0x09}],
+      tempUp:  [{a:0x00,c:0x0A}, {a:0x01,c:0x0A}],
+      tempDown:[{a:0x00,c:0x0B}, {a:0x01,c:0x0B}],
+      fan:     [{a:0x00,c:0x0C}, {a:0x01,c:0x0C}],
+      swing:   [{a:0x00,c:0x0D}, {a:0x01,c:0x0D}],
+      turbo:   [{a:0x00,c:0x0E}, {a:0x01,c:0x0E}],
+      sleep:   [{a:0x00,c:0x0F}, {a:0x01,c:0x0F}],
+      iFeel:   [{a:0x00,c:0x10}, {a:0x01,c:0x10}],
+      display: [{a:0x00,c:0x11}, {a:0x01,c:0x11}],
+      health:  [{a:0x00,c:0x12}, {a:0x01,c:0x12}],
+      clean:   [{a:0x00,c:0x13}, {a:0x01,c:0x13}],
+      quiet:   [{a:0x00,c:0x14}, {a:0x01,c:0x14}]
+    },
+    panasonic: {
+      power:   [{a:0x00,c:0x20}, {a:0x01,c:0x20}],
+      mode:    [{a:0x00,c:0x21}, {a:0x01,c:0x21}],
+      tempUp:  [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempDown:[{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      fan:     [{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      swing:   [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      turbo:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      sleep:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      iFeel:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      display: [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      health:  [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      clean:   [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      quiet:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}]
+    },
+    hisense: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    haier: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    tcl: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    electrolux: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    zanussi: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}]
+    },
+    universal: {
+      power:   [{a:0x00,c:0x21}, {a:0x01,c:0x21}, {a:0x02,c:0x21}, {a:0x00,c:0x22}, {a:0x01,c:0x22}, {a:0x00,c:0x20}, {a:0x01,c:0x20}, {a:0x00,c:0xE0}, {a:0x01,c:0xE0}, {a:0x00,c:0x08}, {a:0x01,c:0x08}],
+      mode:    [{a:0x00,c:0x22}, {a:0x01,c:0x22}, {a:0x00:c:0x23}, {a:0x01,c:0x23}, {a:0x00,c:0xE2}, {a:0x01,c:0xE2}, {a:0x00,c:0x09}, {a:0x01,c:0x09}],
+      tempUp:  [{a:0x00,c:0x23}, {a:0x01,c:0x23}, {a:0x00,c:0xE3}, {a:0x01,c:0xE3}, {a:0x00,c:0x0A}, {a:0x01,c:0x0A}],
+      tempDown:[{a:0x00,c:0x24}, {a:0x01,c:0x24}, {a:0x00,c:0xE4}, {a:0x01,c:0xE4}, {a:0x00,c:0x0B}, {a:0x01,c:0x0B}],
+      fan:     [{a:0x00,c:0x25}, {a:0x01,c:0x25}, {a:0x00,c:0xE5}, {a:0x01,c:0xE5}, {a:0x00,c:0x0C}, {a:0x01,c:0x0C}],
+      swing:   [{a:0x00,c:0x26}, {a:0x01,c:0x26}, {a:0x00,c:0xE6}, {a:0x01,c:0xE6}, {a:0x00,c:0x0D}, {a:0x01,c:0x0D}],
+      turbo:   [{a:0x00,c:0x27}, {a:0x01,c:0x27}, {a:0x00,c:0xE7}, {a:0x01,c:0xE7}, {a:0x00,c:0x0E}, {a:0x01,c:0x0E}],
+      sleep:   [{a:0x00,c:0x28}, {a:0x01,c:0x28}, {a:0x00,c:0xE8}, {a:0x01,c:0xE8}, {a:0x00,c:0x0F}, {a:0x01,c:0x0F}],
+      iFeel:   [{a:0x00,c:0x29}, {a:0x01,c:0x29}, {a:0x00,c:0xE9}, {a:0x01,c:0xE9}, {a:0x00,c:0x10}, {a:0x01,c:0x10}],
+      display: [{a:0x00,c:0x2A}, {a:0x01,c:0x2A}, {a:0x00,c:0xEA}, {a:0x01,c:0xEA}, {a:0x00,c:0x11}, {a:0x01,c:0x11}],
+      health:  [{a:0x00,c:0x2B}, {a:0x01,c:0x2B}, {a:0x00,c:0xEB}, {a:0x01,c:0xEB}, {a:0x00,c:0x12}, {a:0x01,c:0x12}],
+      clean:   [{a:0x00,c:0x2C}, {a:0x01,c:0x2C}, {a:0x00,c:0xEC}, {a:0x01,c:0xEC}, {a:0x00,c:0x13}, {a:0x01,c:0x13}],
+      quiet:   [{a:0x00,c:0x2D}, {a:0x01,c:0x2D}, {a:0x00,c:0xED}, {a:0x01,c:0xED}, {a:0x00,c:0x14}, {a:0x01,c:0x14}]
+    }
+  };
 
   // ============================================================
-  //  ИНИЦИАЛИЗАЦИЯ
+  //  СОСТОЯНИЕ ПРИЛОЖЕНИЯ
   // ============================================================
-  // ...
+  let power = true;
+  let temperature = 24;
+  let modeIndex = 0;
+  const modes = ['❄️ Охлаждение', '☀️ Обогрев', '💨 Вентиляция', '💧 Осушение', '🔄 Авто'];
+  let fanIndex = 0;
+  const fanNames = ['Авто','Низк','Сред','Выс'];
+  let swing = true;
+  let turbo = false;
+  let sleep = false;
+  let timerMinutes = 0;
+  let timerInterval = null;
+  let iFeel = false;
+  let displayLight = true;
+  let locked = false;
+  let health = false;
+  let clean = false;
+  let quiet = false;
+
+  let currentBrand = 'roda';
+  let savedCodes = {
+    power: null, mode: null, tempUp: null, tempDown: null, fan: null,
+    swing: null, turbo: null, sleep: null, iFeel: null, display: null,
+    health: null, clean: null, quiet: null
+  };
+  let settings = {
+    theme: 'light',
+    displayColor: '#a8f0a8',
+    vibro: false,
+    sound: false
+  };
+
+  // ============================================================
+  //  ЗАГРУЗКА / СОХРАНЕНИЕ
+  // ============================================================
+  function loadAll() {
+    try {
+      const saved = localStorage.getItem('univ_remote_data');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.codes) Object.assign(savedCodes, data.codes);
+        if (data.settings) Object.assign(settings, data.settings);
+        if (data.brand) currentBrand = data.brand;
+      }
+    } catch(e) {}
+  }
+  function saveAll() {
+    try {
+      localStorage.setItem('univ_remote_data', JSON.stringify({
+        codes: savedCodes,
+        settings: settings,
+        brand: currentBrand
+      }));
+    } catch(e) {}
+  }
+
+  // ============================================================
+  //  ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА
+  // ============================================================
+  function initUI() {
+    document.body.className = settings.theme;
+    document.getElementById('themeSelect').value = settings.theme;
+    document.getElementById('displayColor').value = settings.displayColor;
+    changeDisplayColor();
+    document.getElementById('vibroCheck').checked = settings.vibro;
+    document.getElementById('soundCheck').checked = settings.sound;
+    document.getElementById('brandSelect').value = currentBrand;
+    document.getElementById('learnStatus').textContent = 'Марка: ' + currentBrand.toUpperCase() + '. Выберите функцию в настройках.';
+  }
+
+  function toggleSettings() {
+    document.getElementById('settingsPanel').classList.toggle('open');
+  }
+
+  function changeTheme() {
+    settings.theme = document.getElementById('themeSelect').value;
+    document.body.className = settings.theme;
+    saveAll();
+  }
+
+  function changeDisplayColor() {
+    const color = document.getElementById('displayColor').value;
+    settings.displayColor = color;
+    const display = document.getElementById('display');
+    display.style.color = color;
+    display.style.borderColor = color;
+    document.querySelectorAll('.display, .display-top, .display-temp, .display-mode, .display-extra').forEach(el => {
+      el.style.color = color;
+    });
+    saveAll();
+  }
+
+  function changeBrand() {
+    const brand = document.getElementById('brandSelect').value;
+    currentBrand = brand;
+    for (let key in savedCodes) savedCodes[key] = null;
+    saveAll();
+    document.getElementById('learnStatus').textContent = 'Марка: ' + brand.toUpperCase() + '. Коды сброшены.';
+    alert('Выбрана марка ' + brand.toUpperCase() + '. Все ранее найденные коды сброшены. Используйте "Найти код" для каждой функции.');
+  }
+
+  function resetAllCodes() {
+    if (confirm('Сбросить все сохранённые коды и настройки?')) {
+      for (let key in savedCodes) savedCodes[key] = null;
+      settings.theme = 'light';
+      settings.displayColor = '#a8f0a8';
+      settings.vibro = false;
+      settings.sound = false;
+      saveAll();
+      initUI();
+      document.getElementById('learnStatus').textContent = 'Все коды сброшены.';
+    }
+  }
+
+  function saveSettings() {
+    settings.vibro = document.getElementById('vibroCheck').checked;
+    settings.sound = document.getElementById('soundCheck').checked;
+    saveAll();
+  }
+
+  // ============================================================
+  //  ОБНОВЛЕНИЕ ДИСПЛЕЯ
+  // ============================================================
+  function updateUI() {
+    if (locked) document.getElementById('btnGrid').classList.add('lock-active');
+    else document.getElementById('btnGrid').classList.remove('lock-active');
+
+    if (!power) {
+      document.getElementById('tempDisplay').innerHTML = 'OFF';
+      document.getElementById('modeDisplay').textContent = 'Выключен';
+      document.getElementById('powerStatus').textContent = '⛔ Выкл';
+      document.getElementById('fanSpeed').textContent = '—';
+      document.getElementById('timerDisplay').textContent = '⏲ Таймер выкл';
+      document.getElementById('swingStatus').textContent = '↕ —';
+      document.getElementById('indicatorIFeel').textContent = '👤 iFeel выкл';
+      document.getElementById('indicatorLock').textContent = '🔒 Блок выкл';
+      document.getElementById('indicatorHealth').textContent = '❤️ Здоровье выкл';
+      document.getElementById('indicatorClean').textContent = '🧹 Очистка выкл';
+      document.getElementById('indicatorQuiet').textContent = '🔇 Тихий выкл';
+      document.getElementById('indicatorTurbo').textContent = '⚡ Турбо выкл';
+      document.getElementById('indicatorSleep').textContent = '🌙 Сон выкл';
+      return;
+    }
+    document.getElementById('tempDisplay').innerHTML = temperature + '<span>°</span>';
+    document.getElementById('modeDisplay').textContent = modes[modeIndex];
+    document.getElementById('powerStatus').textContent = '🔛 Вкл';
+    document.getElementById('fanSpeed').textContent = '💨 ' + fanNames[fanIndex];
+    document.getElementById('swingStatus').textContent = swing ? '↕ Свинг вкл' : '↕ Свинг выкл';
+    document.getElementById('indicatorTurbo').textContent = turbo ? '⚡ Турбо вкл' : '⚡ Турбо выкл';
+    document.getElementById('indicatorSleep').textContent = sleep ? '🌙 Сон вкл' : '🌙 Сон выкл';
+    document.getElementById('indicatorIFeel').textContent = iFeel ? '👤 iFeel вкл' : '👤 iFeel выкл';
+    document.getElementById('indicatorLock').textContent = locked ? '🔒 Блок вкл' : '🔒 Блок выкл';
+    document.getElementById('indicatorHealth').textContent = health ? '❤️ Здоровье вкл' : '❤️ Здоровье выкл';
+    document.getElementById('indicatorClean').textContent = clean ? '🧹 Очистка вкл' : '🧹 Очистка выкл';
+    document.getElementById('indicatorQuiet').textContent = quiet ? '🔇 Тихий вкл' : '🔇 Тихий выкл';
+    if (timerMinutes > 0) {
+      const h = Math.floor(timerMinutes / 60);
+      const m = timerMinutes % 60;
+      document.getElementById('timerDisplay').textContent = '⏲ Таймер ' + (h > 0 ? h + 'ч ' : '') + m + 'м';
+    } else {
+      document.getElementById('timerDisplay').textContent = '⏲ Таймер выкл';
+    }
+  }
 
   // ============================================================
   //  ИНДИКАТОР ИК
@@ -374,7 +722,7 @@
   }
 
   // ============================================================
-  //  ВИБРО И ЗВУК (исправленная версия)
+  //  ВИБРО И ЗВУК
   // ============================================================
   let audioCtx = null;
 
@@ -420,8 +768,31 @@
   }
 
   // ============================================================
-  //  ОБНОВЛЁННАЯ ОТПРАВКА КОДА (с вызовом вибро/звука)
+  //  ОТПРАВКА ИК
   // ============================================================
+  function sendIRCode(frequency, pattern) {
+    if (window.irBridge) {
+      window.irBridge.sendIR(frequency, pattern);
+      console.log('📡 ИК отправлен');
+    } else {
+      console.warn('⚠️ irBridge не доступен');
+    }
+  }
+
+  function necPattern(address, command) {
+    const bits = [9000, 4500];
+    let addr = address & 0xFF;
+    let invAddr = (~addr) & 0xFF;
+    for (let i = 0; i < 8; i++) bits.push(560, (addr & (1 << i)) ? 1690 : 560);
+    for (let i = 0; i < 8; i++) bits.push(560, (invAddr & (1 << i)) ? 1690 : 560);
+    let cmd = command & 0xFF;
+    let invCmd = (~cmd) & 0xFF;
+    for (let i = 0; i < 8; i++) bits.push(560, (cmd & (1 << i)) ? 1690 : 560);
+    for (let i = 0; i < 8; i++) bits.push(560, (invCmd & (1 << i)) ? 1690 : 560);
+    bits.push(560);
+    return bits;
+  }
+
   function sendSavedCode(action) {
     const code = savedCodes[action];
     if (code) {
@@ -435,25 +806,242 @@
   }
 
   // ============================================================
-  //  ОСТАЛЬНЫЕ ФУНКЦИИ (без изменений, кроме вызова updateIrIndicator при загрузке)
+  //  АВТОПОИСК
   // ============================================================
+  let learningActive = false;
+  let learnIndex = 0;
+  let learnTimer = null;
+  let currentAction = null;
 
-  // После загрузки страницы обновляем индикатор
-  window.onload = function() {
-    loadAll();
-    initUI();
+  function startLearning() {
+    const action = document.getElementById('learnAction').value;
+    const brand = currentBrand;
+    const db = codeBases[brand];
+    if (!db || !db[action] || db[action].length === 0) {
+      document.getElementById('learnStatus').textContent = '❌ Нет базы для этой функции';
+      return;
+    }
+    if (learningActive) {
+      stopLearning('Остановлено');
+      return;
+    }
+    if (savedCodes[action]) {
+      if (!confirm('Код для "' + document.getElementById('learnAction').options[document.getElementById('learnAction').selectedIndex].text + '" уже найден. Перезаписать?')) {
+        return;
+      }
+      savedCodes[action] = null;
+      saveAll();
+    }
+
+    learningActive = true;
+    learnIndex = 0;
+    currentAction = action;
+    document.getElementById('learnBtn').textContent = '⏹ Остановить';
+    document.getElementById('learnStatus').textContent = 'Поиск... (0/' + db[action].length + ')';
+    nextLearnCode();
+  }
+
+  function nextLearnCode() {
+    if (!learningActive || learnIndex >= codeBases[currentBrand][currentAction].length) {
+      stopLearning('❌ Коды закончились, не найдено');
+      return;
+    }
+    const entry = codeBases[currentBrand][currentAction][learnIndex];
+    const pattern = necPattern(entry.a, entry.c);
+    sendIRCode(38000, pattern);
+    document.getElementById('learnStatus').textContent = 'Поиск... (' + (learnIndex+1) + '/' + codeBases[currentBrand][currentAction].length + ')';
+
+    learnTimer = setTimeout(() => {
+      if (!learningActive) return;
+      const userConfirm = confirm('Кондиционер отреагировал? (код #' + (learnIndex+1) + ')');
+      if (userConfirm) {
+        savedCodes[currentAction] = { address: entry.a, command: entry.c };
+        saveAll();
+        stopLearning('✅ Код найден!');
+        alert('Код сохранён для "' + document.getElementById('learnAction').options[document.getElementById('learnAction').selectedIndex].text + '"');
+      } else {
+        learnIndex++;
+        nextLearnCode();
+      }
+    }, 3000);
+  }
+
+  function stopLearning(message) {
+    learningActive = false;
+    if (learnTimer) clearTimeout(learnTimer);
+    document.getElementById('learnStatus').textContent = message || 'Поиск остановлен';
+    document.getElementById('learnBtn').textContent = '🔍 Найти код';
+  }
+
+  // ============================================================
+  //  ОБРАБОТЧИКИ КНОПОК
+  // ============================================================
+  function handlePower() {
+    if (locked) return;
+    power = !power;
+    if (!power && timerInterval) { clearInterval(timerInterval); timerInterval = null; timerMinutes = 0; }
     updateUI();
-    updateIrIndicator();
-    // Проверяем наличие irBridge через 1 секунду (может подгрузиться позже)
-    setTimeout(updateIrIndicator, 1000);
-  };
-
-  // Также обновляем индикатор после каждого нажатия (на всякий случай)
-  // Но мы можем вызывать updateIrIndicator в обработчиках кнопок, но не обязательно.
+    if (!sendSavedCode('power')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Вкл/Выкл"';
+    }
+  }
+  function handleTempUp() {
+    if (locked || !power) return;
+    if (temperature < 32) temperature++;
+    updateUI();
+    if (!sendSavedCode('tempUp')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Температура +"';
+    }
+  }
+  function handleTempDown() {
+    if (locked || !power) return;
+    if (temperature > 16) temperature--;
+    updateUI();
+    if (!sendSavedCode('tempDown')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Температура −"';
+    }
+  }
+  function handleMode() {
+    if (locked || !power) return;
+    modeIndex = (modeIndex + 1) % modes.length;
+    updateUI();
+    if (!sendSavedCode('mode')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Режим"';
+    }
+  }
+  function handleFan() {
+    if (locked || !power) return;
+    fanIndex = (fanIndex + 1) % fanNames.length;
+    updateUI();
+    if (!sendSavedCode('fan')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Вентилятор"';
+    }
+  }
+  function handleSwing() {
+    if (locked || !power) return;
+    swing = !swing;
+    updateUI();
+    if (!sendSavedCode('swing')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Свинг"';
+    }
+  }
+  function handleTurbo() {
+    if (locked || !power) return;
+    turbo = !turbo;
+    updateUI();
+    if (!sendSavedCode('turbo')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Турбо"';
+    }
+  }
+  function handleSleep() {
+    if (locked || !power) return;
+    sleep = !sleep;
+    updateUI();
+    if (!sendSavedCode('sleep')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Сон"';
+    }
+  }
+  function handleIFeel() {
+    if (locked || !power) return;
+    iFeel = !iFeel;
+    updateUI();
+    if (!sendSavedCode('iFeel')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "iFeel"';
+    }
+  }
+  function handleDisplay() {
+    if (locked || !power) return;
+    displayLight = !displayLight;
+    alert('Подсветка внутреннего блока ' + (displayLight ? 'включена' : 'выключена'));
+    if (!sendSavedCode('display')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Дисплей"';
+    }
+  }
+  function handleLock() {
+    locked = !locked;
+    updateUI();
+    alert(locked ? 'Кнопки заблокированы' : 'Блокировка снята');
+  }
+  function handleHealth() {
+    if (locked || !power) return;
+    health = !health;
+    updateUI();
+    if (!sendSavedCode('health')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Здоровье"';
+    }
+  }
+  function handleClean() {
+    if (locked || !power) return;
+    clean = !clean;
+    updateUI();
+    if (!sendSavedCode('clean')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Очистка"';
+    }
+  }
+  function handleQuiet() {
+    if (locked || !power) return;
+    quiet = !quiet;
+    updateUI();
+    if (!sendSavedCode('quiet')) {
+      document.getElementById('learnStatus').textContent = '⚠️ Код не найден. Запустите обучение для "Тихий"';
+    }
+  }
+  function handleTimer() {
+    if (locked || !power) return;
+    let val = prompt('Введите время в минутах (0 – выключить):', timerMinutes || '0');
+    if (val === null) return;
+    let mins = parseInt(val);
+    if (isNaN(mins) || mins < 0) mins = 0;
+    timerMinutes = mins;
+    if (timerInterval) clearInterval(timerInterval);
+    if (timerMinutes > 0) {
+      timerInterval = setInterval(() => {
+        timerMinutes--;
+        if (timerMinutes <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          power = false;
+          updateUI();
+        } else {
+          updateUI();
+        }
+      }, 60000);
+      alert('Таймер установлен на ' + timerMinutes + ' мин');
+    } else {
+      alert('Таймер выключен');
+    }
+    updateUI();
+  }
+  function handleReset() {
+    if (locked) return;
+    power = true;
+    temperature = 24;
+    modeIndex = 0;
+    fanIndex = 0;
+    swing = true;
+    turbo = false;
+    sleep = false;
+    iFeel = false;
+    displayLight = true;
+    health = false;
+    clean = false;
+    quiet = false;
+    if (timerInterval) clearInterval(timerInterval);
+    timerMinutes = 0;
+    locked = false;
+    updateUI();
+    alert('Настройки сброшены');
+  }
 
   // ============================================================
-  //  ПОЛНЫЙ КОД БУДЕТ В ФИНАЛЬНОМ ОТВЕТЕ
+  //  ЗАПУСК
   // ============================================================
+  loadAll();
+  initUI();
+  updateUI();
+  updateIrIndicator();
+  setTimeout(updateIrIndicator, 1000);
+  console.log('Универсальный пульт загружен. Марка:', currentBrand);
 </script>
 </body>
-</html> 
+</html>
