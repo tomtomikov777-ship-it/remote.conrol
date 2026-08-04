@@ -1,5 +1,6 @@
 package io.ionic.roda;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebView;
 import android.hardware.ConsumerIrManager;
@@ -32,19 +33,21 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onStart() {
-        super.onStart(); // обязательно вызываем родительский метод
+        super.onStart();
         try {
             WebView webView = getBridge().getWebView();
             if (webView != null) {
+                webView.getSettings().setJavaScriptEnabled(true);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    WebView.setWebContentsDebuggingEnabled(true);
+                }
                 webView.addJavascriptInterface(new IrBridge(), "irBridge");
-                Log.i(TAG, "IR bridge registered successfully");
+                Log.i(TAG, "IR bridge registered");
             } else {
                 Log.e(TAG, "WebView is null");
-                Toast.makeText(this, "Ошибка: WebView не инициализирован", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error registering bridge: " + e.getMessage());
-            Toast.makeText(this, "Ошибка инициализации: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -54,9 +57,9 @@ public class MainActivity extends BridgeActivity {
             if (irManager != null && irManager.hasIrEmitter()) {
                 try {
                     irManager.transmit(frequency, pattern);
-                    Log.i(TAG, "IR signal sent");
+                    Log.i(TAG, "IR sent");
                 } catch (Exception e) {
-                    Log.e(TAG, "IR transmit error: " + e.getMessage());
+                    Log.e(TAG, "IR error: " + e.getMessage());
                 }
             } else {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "ИК-передача недоступна", Toast.LENGTH_SHORT).show());
