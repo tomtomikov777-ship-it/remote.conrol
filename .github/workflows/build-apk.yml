@@ -32,7 +32,7 @@ jobs:
         cd capacitor-app
         npm init -y
         npm install @capacitor/core @capacitor/cli @capacitor/android
-        npx cap init "RODA Remote" "io.ionic.roda" --web-dir=www
+        npx cap init "Remote Control" "io.remote.control" --web-dir=www
         npx cap add android
         mkdir -p www
         cp -r ../app/* www/
